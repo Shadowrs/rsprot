@@ -281,6 +281,8 @@ public abstract class AbstractNetworkServiceFactory<R> {
      */
     public open fun getNetworkConfiguration(): NetworkConfiguration.Builder = NetworkConfiguration.Builder()
 
+    public abstract val bindMode: Int
+
     /**
      * A Kotlin-only helper function to build a network configuration builder.
      */
@@ -328,6 +330,7 @@ public abstract class AbstractNetworkServiceFactory<R> {
             getRsaKeyPair(),
             getJs5Configuration(),
             getJs5GroupProvider(),
+            bindMode
         )
     }
 

@@ -95,9 +95,10 @@ public class NetworkService<R>
         rsaKeyPair: RsaKeyPair,
         js5Configuration: Js5Configuration,
         js5GroupProvider: Js5GroupProvider,
+        public val bindMode: Int
     ) {
         internal val encoderRepositories: MessageEncoderRepositories = MessageEncoderRepositories(huffmanCodecProvider)
-        internal val js5Service: Js5Service =
+        public val js5Service: Js5Service =
             Js5Service(
                 this,
                 js5Configuration,
@@ -123,8 +124,8 @@ public class NetworkService<R>
         public val messageSizeEstimator: OutgoingMessageSizeEstimator =
             OutgoingMessageSizeEstimator(encoderRepositories)
 
-        private lateinit var bossGroup: EventLoopGroup
-        private lateinit var childGroup: EventLoopGroup
+        public lateinit var bossGroup: EventLoopGroup
+        public lateinit var childGroup: EventLoopGroup
         private lateinit var js5PrefetchFuture: ScheduledFuture<*>
 
         /**
@@ -143,28 +144,41 @@ public class NetworkService<R>
                         )
                     this.bossGroup = initializer.config().group()
                     this.childGroup = initializer.config().childGroup()
-                    val futures =
-                        ports
-                            .map(initializer::bind)
-                            .map<ChannelFuture, CompletableFuture<Void>>(ChannelFuture::asCompletableFuture)
-                    val future =
-                        CompletableFuture
-                            .allOf(*futures.toTypedArray())
-                            .handle { _, exception ->
-                                if (exception != null) {
-                                    bossGroup.shutdownGracefully()
-                                    childGroup.shutdownGracefully()
-                                    throw exception
+                    if (bindMode == 1) {
+                        ports.forEach {
+                            initializer.bind(it)
+                        }
+                        js5ServiceExecutor.start()
+                        js5PrefetchFuture = Js5Service.startPrefetching(js5Service)
+                    } else {
+                        val futures =
+                            ports
+                                .asSequence()
+                                .map {
+                                    logger.debug { "bind to $it" }
+                                    initializer.bind(it)
                                 }
-                            }
-                    js5ServiceExecutor.start()
-                    js5PrefetchFuture = Js5Service.startPrefetching(js5Service)
-                    try {
-                        // join it, which will propagate any exceptions
-                        future.join()
-                    } catch (t: Throwable) {
-                        js5Service.triggerShutdown()
-                        throw t
+                                .map<ChannelFuture, CompletableFuture<Void>>(ChannelFuture::asCompletableFuture)
+                                .toList()
+                        val future =
+                            CompletableFuture
+                                .allOf(*futures.toTypedArray())
+                                .handle { _, exception ->
+                                    if (exception != null) {
+                                        bossGroup.shutdownGracefully()
+                                        childGroup.shutdownGracefully()
+                                        throw exception
+                                    }
+                                }
+                        js5ServiceExecutor.start()
+                        js5PrefetchFuture = Js5Service.startPrefetching(js5Service)
+                        try {
+                            // join it, which will propagate any exceptions
+                            future.join()
+                        } catch (t: Throwable) {
+                            js5Service.triggerShutdown()
+                            throw t
+                        }
                     }
                 }
             logger.info { "Started in: $time" }

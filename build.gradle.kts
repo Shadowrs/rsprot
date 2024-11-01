@@ -1,3 +1,4 @@
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import com.vanniktech.maven.publish.JavadocJar
 import com.vanniktech.maven.publish.KotlinJvm
 import com.vanniktech.maven.publish.SonatypeHost
@@ -13,11 +14,12 @@ plugins {
     alias(libs.plugins.dokka)
     `jvm-test-suite`
     `maven-publish`
+    id ("com.gradleup.shadow") version "8.3.1"
 }
 
 allprojects {
     group = "net.rsprot"
-    version = "1.0.0-ALPHA-20241021"
+    version = "1.0.0-ALPHA-20241021-dev1"
 
     repositories {
         mavenCentral()
@@ -155,4 +157,7 @@ gradle.taskGraph.whenReady {
     for (task in duplicateTasks) {
         task.setProperty("duplicatesStrategy", "EXCLUDE")
     }
+}
+application {
+    mainClass = ""
 }
