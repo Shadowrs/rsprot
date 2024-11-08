@@ -134,7 +134,8 @@ public class NetworkService<R>
          */
         @ExperimentalUnsignedTypes
         @ExperimentalStdlibApi
-        public fun start() {
+        public fun start(): List<CompletableFuture<Void>> {
+            var bindFutures = mutableListOf<CompletableFuture<Void>>()
             val time =
                 measureTime {
                     val bootstrap = bootstrapBuilder.build(messageSizeEstimator)
@@ -146,16 +147,37 @@ public class NetworkService<R>
                     this.childGroup = initializer.config().childGroup()
                     if (bindMode == 1) {
                         ports.forEach {
+                            logger.info { "bind to $it" }
                             initializer.bind(it)
                         }
                         js5ServiceExecutor.start()
                         js5PrefetchFuture = Js5Service.startPrefetching(js5Service)
-                    } else {
+                    }
+                    else if (bindMode == 2) {
                         val futures =
                             ports
-                                .asSequence()
                                 .map {
-                                    logger.debug { "bind to $it" }
+                                    object : CompletableFuture<Void>() {
+                                        override fun get(): Void? {
+                                            logger.info { "bind to $it" }
+                                            initializer.bind(it).addListener { p0 ->
+                                                logger.info { "after $it"}
+                                            }.syncUninterruptibly()
+                                            return null
+                                        }
+                                    }
+                                }
+                                .toList()
+                        bindFutures.addAll(futures)
+                        js5ServiceExecutor.start()
+                        js5PrefetchFuture = Js5Service.startPrefetching(js5Service)
+                    }
+                    else
+                    {
+                        val futures =
+                            ports
+                                .map {
+                                    logger.info { "bind to $it" }
                                     initializer.bind(it)
                                 }
                                 .map<ChannelFuture, CompletableFuture<Void>>(ChannelFuture::asCompletableFuture)
@@ -189,6 +211,7 @@ public class NetworkService<R>
                     it.name.lowercase().replaceFirstChar(Char::uppercase)
                 }
             logger.info { "Supported client types: $clientTypeNames" }
+            return bindFutures
         }
 
         public fun shutdown() {

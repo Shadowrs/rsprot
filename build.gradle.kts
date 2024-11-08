@@ -19,7 +19,7 @@ plugins {
 
 allprojects {
     group = "net.rsprot"
-    version = "1.0.0-ALPHA-20241021-dev1"
+    version = "1.0.0-ALPHA-20241108-dev1"
 
     repositories {
         mavenCentral()
