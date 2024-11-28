@@ -145,9 +145,10 @@ public class NetworkService<R>
                         )
                     this.bossGroup = initializer.config().group()
                     this.childGroup = initializer.config().childGroup()
+                    logger.trace { "bindmode $bindMode" }
                     if (bindMode == 1) {
                         ports.forEach {
-                            logger.info { "bind to $it" }
+                            logger.trace { "bind to $it" }
                             initializer.bind(it)
                         }
                         js5ServiceExecutor.start()
@@ -159,9 +160,9 @@ public class NetworkService<R>
                                 .map {
                                     object : CompletableFuture<Void>() {
                                         override fun get(): Void? {
-                                            logger.info { "bind to $it" }
+                                            logger.trace { "bind to $it" }
                                             initializer.bind(it).addListener { p0 ->
-                                                logger.info { "after $it"}
+                                                logger.trace { "after $it"}
                                             }.syncUninterruptibly()
                                             return null
                                         }
@@ -177,7 +178,7 @@ public class NetworkService<R>
                         val futures =
                             ports
                                 .map {
-                                    logger.info { "bind to $it" }
+                                    logger.trace { "bind to $it" }
                                     initializer.bind(it)
                                 }
                                 .map<ChannelFuture, CompletableFuture<Void>>(ChannelFuture::asCompletableFuture)
