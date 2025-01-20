@@ -39,6 +39,7 @@ import net.rsprot.protocol.common.setCommunicationThread as setInternalCommunica
  * in a single "god" object.
  * @param R the receiver type for the incoming game message consumers, typically a player
  * @property allocator the byte buffer allocator used throughout the library
+ * @property host the host to which to bind to, defaulting to null.
  * @property ports the list of ports that the service will connect to
  * @property betaWorld whether this world is a beta world
  * @property bootstrapBuilder the bootstrap builder used to configure the socket and Netty
@@ -78,6 +79,7 @@ import net.rsprot.protocol.common.setCommunicationThread as setInternalCommunica
 public class NetworkService<R>
     internal constructor(
         internal val allocator: ByteBufAllocator,
+        internal val host: String?,
         internal val ports: List<Int>,
         internal val betaWorld: Boolean,
         internal val bootstrapBuilder: BootstrapBuilder,
@@ -175,11 +177,13 @@ public class NetworkService<R>
                     }
                     else
                     {
+
+                        val host = this.host
                         val futures =
                             ports
                                 .map {
                                     logger.trace { "bind to $it" }
-                                    initializer.bind(it)
+                                    if (host != null) initializer.bind(host, it) else initializer.bind(it)
                                 }
                                 .map<ChannelFuture, CompletableFuture<Void>>(ChannelFuture::asCompletableFuture)
                                 .toList()

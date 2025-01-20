@@ -41,6 +41,12 @@ public abstract class AbstractNetworkServiceFactory<R> {
         get() = PooledByteBufAllocator.DEFAULT
 
     /**
+     * The host to which to bind to, defaulting to null.
+     */
+    public open val host: String?
+        get() = null
+
+    /**
      * The list of ports to listen to. Typically, the server should listen to ports
      * 43594 and 443 in this section, with the 43594 port being the primary one,
      * and 443 being the fallback. 443 is additionally used for HTTP requests, should
@@ -83,6 +89,24 @@ public abstract class AbstractNetworkServiceFactory<R> {
      */
     public open val betaWorld: Boolean
         get() = false
+
+    /**
+     * The maximum number of zone buffers that can be computed in one game cycle
+     * before the computation code begins to warn the user about a potential leak.
+     */
+    public open val zoneCountBeforeLeakWarning: Int
+        get() = DEFAULT_ZONE_COUNT_BEFORE_LEAK_WARNING
+
+    /**
+     * The maximum number of game cycles a zone buffer will be kept around for
+     * before forcibly releasing it. This is secondary validation in case
+     * a buffer is written over to Netty, but something happens with the
+     * connection behind it and the packet actually never gets written over
+     * or released - so this code will ensure that once the time is up, that
+     * buffer still is released.
+     */
+    public open val bufRetentionCountBeforeRelease: Int
+        get() = DEFAULT_BUF_RETENTION_COUNT_BEFORE_RELEASE
 
     /**
      * Gets the bootstrap factory used to register the network service.
@@ -270,6 +294,7 @@ public abstract class AbstractNetworkServiceFactory<R> {
      */
     public fun build(): NetworkService<R> {
         val allocator = this.allocator
+        val host = this.host
         val ports = this.ports
         val supportedClientTypes = this.supportedClientTypes
         val huffman = getHuffmanCodecProvider()
@@ -284,6 +309,7 @@ public abstract class AbstractNetworkServiceFactory<R> {
             )
         return NetworkService(
             allocator,
+            host,
             ports,
             betaWorld,
             getBootstrapFactory(),
@@ -295,6 +321,8 @@ public abstract class AbstractNetworkServiceFactory<R> {
             getGameMessageHandlers(),
             getLoginHandlers(),
             getNetworkConfiguration().build(),
+            zoneCountBeforeLeakWarning,
+            bufRetentionCountBeforeRelease,
             huffman,
             getGameMessageConsumerRepositoryProvider(),
             getRsaKeyPair(),
@@ -305,5 +333,8 @@ public abstract class AbstractNetworkServiceFactory<R> {
 
     private companion object {
         private val logger = InlineLogger()
+
+        private const val DEFAULT_ZONE_COUNT_BEFORE_LEAK_WARNING: Int = 25_000
+        private const val DEFAULT_BUF_RETENTION_COUNT_BEFORE_RELEASE: Int = 100
     }
 }

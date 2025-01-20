@@ -11,7 +11,6 @@ plugins {
     alias(libs.plugins.jmh)
     alias(libs.plugins.ktlint)
     alias(libs.plugins.vanniktech.publish)
-    alias(libs.plugins.dokka)
     `jvm-test-suite`
     `maven-publish`
     id ("com.gradleup.shadow") version "8.3.1"
@@ -19,7 +18,7 @@ plugins {
 
 allprojects {
     group = "net.rsprot"
-    version = "1.0.0-ALPHA-20241201-dmm"
+    version = "1.0.0-ALPHA-20250117-dmm"
 
     repositories {
         mavenCentral()
@@ -55,7 +54,6 @@ private val exclusionRegex = Regex("""osrs-\d+""")
 subprojects {
     apply(plugin = "org.jlleitschuh.gradle.ktlint")
     apply(plugin = "signing")
-    apply(plugin = "org.jetbrains.dokka")
     apply(plugin = "org.jetbrains.kotlin.jvm")
     apply(plugin = "jvm-test-suite")
 
@@ -94,13 +92,6 @@ subprojects {
             version = project.version.toString(),
         )
 
-        configure(
-            KotlinJvm(
-                javadocJar = JavadocJar.Dokka("dokkaHtml"),
-                sourcesJar = true,
-            ),
-        )
-
         pom {
             url = "https://github.com/blurite/rsprot"
             inceptionYear = "2024"
@@ -136,14 +127,15 @@ subprojects {
             // Enable GPG signing for all publications.
             // Signing can be skipped for localhost and GitHub packages,
             // it is only required for Maven Central.
-            signAllPublications()
+            if ("publishAllPublicationsToMavenCentralRepository" in gradle.startParameter.taskNames) {
+                signAllPublications()
+            }
         }
     }
 }
 
 afterEvaluate {
     tasks.getByName("generateMetadataFileForMavenPublication") {
-        dependsOn(tasks.getByName("dokkaJavadocJar"))
         dependsOn(tasks.kotlinSourcesJar)
     }
 }
