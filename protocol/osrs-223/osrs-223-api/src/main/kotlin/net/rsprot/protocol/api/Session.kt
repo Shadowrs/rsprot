@@ -8,11 +8,12 @@ import net.rsprot.protocol.ServerProtCategory
 import net.rsprot.protocol.api.channel.inetAddress
 import net.rsprot.protocol.api.game.GameMessageDecoder
 import net.rsprot.protocol.api.logging.networkLog
-import net.rsprot.protocol.common.RSProtFlags
 import net.rsprot.protocol.game.outgoing.GameServerProtCategory
 import net.rsprot.protocol.game.outgoing.zone.payload.SoundArea
+import net.rsprot.protocol.internal.RSProtFlags
 import net.rsprot.protocol.loginprot.incoming.util.LoginBlock
 import net.rsprot.protocol.loginprot.incoming.util.LoginClientType
+import net.rsprot.protocol.message.ConsumableMessage
 import net.rsprot.protocol.message.IncomingGameMessage
 import net.rsprot.protocol.message.OutgoingGameMessage
 import net.rsprot.protocol.message.codec.incoming.MessageConsumer
@@ -117,7 +118,17 @@ public class Session<R>(
         message: OutgoingGameMessage,
         category: ServerProtCategory,
     ) {
-        if (this.channelStatus != ChannelStatus.OPEN) return
+        if (message is ConsumableMessage) {
+            message.consume()
+        }
+        if (this.channelStatus != ChannelStatus.OPEN) {
+            if (message is ReferenceCounted) {
+                if (message.refCnt() > 0) {
+                    ReferenceCountUtil.safeRelease(message)
+                }
+            }
+            return
+        }
         if (RSProtFlags.filterMissingPacketsInClient) {
             if (loginBlock.clientType == LoginClientType.DESKTOP && message is SoundArea) {
                 throw IllegalArgumentException(
@@ -364,9 +375,11 @@ public class Session<R>(
     }
 
     /**
-     * Adds an incoming message to the incoming message queue
+     * Adds an incoming message to the incoming message queue.
+     * Function is public to assist with testing, and should not be invoked
+     * by servers outside of that.
      */
-    internal fun addIncomingMessage(incomingGameMessage: IncomingGameMessage) {
+    public fun addIncomingMessage(incomingGameMessage: IncomingGameMessage) {
         if (this.channelStatus != ChannelStatus.OPEN) return
         incomingMessageQueue += incomingGameMessage
     }

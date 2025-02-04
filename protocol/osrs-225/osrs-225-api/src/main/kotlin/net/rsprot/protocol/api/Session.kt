@@ -10,10 +10,10 @@ import net.rsprot.protocol.api.game.GameDisconnectionReason
 import net.rsprot.protocol.api.game.GameMessageDecoder
 import net.rsprot.protocol.api.logging.networkLog
 import net.rsprot.protocol.api.metrics.addDisconnectionReason
-import net.rsprot.protocol.common.RSProtFlags
 import net.rsprot.protocol.game.outgoing.GameServerProtCategory
 import net.rsprot.protocol.game.outgoing.zone.payload.MapProjAnim
 import net.rsprot.protocol.game.outgoing.zone.payload.SoundArea
+import net.rsprot.protocol.internal.RSProtFlags
 import net.rsprot.protocol.loginprot.incoming.util.LoginBlock
 import net.rsprot.protocol.loginprot.incoming.util.LoginClientType
 import net.rsprot.protocol.message.ConsumableMessage
@@ -126,7 +126,14 @@ public class Session<R>(
         if (message is ConsumableMessage) {
             message.consume()
         }
-        if (this.channelStatus != ChannelStatus.OPEN) return
+        if (this.channelStatus != ChannelStatus.OPEN) {
+            if (message is ReferenceCounted) {
+                if (message.refCnt() > 0) {
+                    ReferenceCountUtil.safeRelease(message)
+                }
+            }
+            return
+        }
         if (RSProtFlags.filterMissingPacketsInClient) {
             if (loginBlock.clientType == LoginClientType.DESKTOP && message is SoundArea) {
                 throw IllegalArgumentException(
@@ -385,9 +392,11 @@ public class Session<R>(
     }
 
     /**
-     * Adds an incoming message to the incoming message queue
+     * Adds an incoming message to the incoming message queue.
+     * Function is public to assist with testing, and should not be invoked
+     * by servers outside of that.
      */
-    internal fun addIncomingMessage(incomingGameMessage: IncomingGameMessage) {
+    public fun addIncomingMessage(incomingGameMessage: IncomingGameMessage) {
         if (this.channelStatus != ChannelStatus.OPEN) return
         incomingMessageQueue += incomingGameMessage
     }

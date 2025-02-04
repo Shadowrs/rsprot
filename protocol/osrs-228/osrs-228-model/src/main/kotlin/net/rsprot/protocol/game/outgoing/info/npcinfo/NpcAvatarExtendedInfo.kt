@@ -3,22 +3,22 @@ package net.rsprot.protocol.game.outgoing.info.npcinfo
 import io.netty.buffer.ByteBufAllocator
 import net.rsprot.buffer.JagByteBuf
 import net.rsprot.compression.provider.HuffmanCodecProvider
-import net.rsprot.protocol.common.RSProtFlags
-import net.rsprot.protocol.common.checkCommunicationThread
 import net.rsprot.protocol.common.client.OldSchoolClientType
-import net.rsprot.protocol.common.game.outgoing.info.npcinfo.encoder.NpcExtendedInfoEncoders
-import net.rsprot.protocol.common.game.outgoing.info.npcinfo.extendedinfo.BaseAnimationSet
-import net.rsprot.protocol.common.game.outgoing.info.npcinfo.extendedinfo.CombatLevelChange
-import net.rsprot.protocol.common.game.outgoing.info.npcinfo.extendedinfo.HeadIconCustomisation
-import net.rsprot.protocol.common.game.outgoing.info.npcinfo.extendedinfo.TypeCustomisation
-import net.rsprot.protocol.common.game.outgoing.info.npcinfo.extendedinfo.VisibleOps
-import net.rsprot.protocol.common.game.outgoing.info.precompute
-import net.rsprot.protocol.common.game.outgoing.info.shared.extendedinfo.FacePathingEntity
-import net.rsprot.protocol.common.game.outgoing.info.shared.extendedinfo.util.HeadBar
-import net.rsprot.protocol.common.game.outgoing.info.shared.extendedinfo.util.HitMark
-import net.rsprot.protocol.common.game.outgoing.info.shared.extendedinfo.util.SpotAnim
 import net.rsprot.protocol.game.outgoing.info.AvatarExtendedInfoWriter
 import net.rsprot.protocol.game.outgoing.info.filter.ExtendedInfoFilter
+import net.rsprot.protocol.internal.RSProtFlags
+import net.rsprot.protocol.internal.checkCommunicationThread
+import net.rsprot.protocol.internal.game.outgoing.info.npcinfo.encoder.NpcExtendedInfoEncoders
+import net.rsprot.protocol.internal.game.outgoing.info.npcinfo.extendedinfo.BaseAnimationSet
+import net.rsprot.protocol.internal.game.outgoing.info.npcinfo.extendedinfo.CombatLevelChange
+import net.rsprot.protocol.internal.game.outgoing.info.npcinfo.extendedinfo.HeadIconCustomisation
+import net.rsprot.protocol.internal.game.outgoing.info.npcinfo.extendedinfo.TypeCustomisation
+import net.rsprot.protocol.internal.game.outgoing.info.npcinfo.extendedinfo.VisibleOps
+import net.rsprot.protocol.internal.game.outgoing.info.precompute
+import net.rsprot.protocol.internal.game.outgoing.info.shared.extendedinfo.FacePathingEntity
+import net.rsprot.protocol.internal.game.outgoing.info.shared.extendedinfo.util.HeadBar
+import net.rsprot.protocol.internal.game.outgoing.info.shared.extendedinfo.util.HitMark
+import net.rsprot.protocol.internal.game.outgoing.info.shared.extendedinfo.util.SpotAnim
 
 public typealias NpcAvatarExtendedInfoWriter =
     AvatarExtendedInfoWriter<NpcExtendedInfoEncoders, NpcAvatarExtendedInfoBlocks>
@@ -624,8 +624,8 @@ public class NpcAvatarExtendedInfo(
     /**
      * Transforms this NPC into the [id] provided.
      * It should be noted that this extended info block is transient and only applies to one cycle.
-     * The server is expected to additionally change the id of the avatar itself, otherwise
-     * any new observers will get the old variant.
+     * The server is expected to additionally change the id of the avatar itself via [NpcAvatar.setId],
+     * otherwise any new observers will get the old variant.
      * @param id the new id of the npc to transform to.
      */
     public fun setTransmogrification(id: Int) {
@@ -1279,6 +1279,14 @@ public class NpcAvatarExtendedInfo(
     }
 
     /**
+     * Checks if the avatar has any extended info flagged.
+     * @return whether any extended info flags are set.
+     */
+    internal fun hasExtendedInfo(): Boolean {
+        return this.flags != 0
+    }
+
+    /**
      * Pre-computes all the buffers for this avatar.
      * Pre-computation is done, so we don't have to calculate these extended info blocks
      * for every avatar that observes us. Instead, we can do more performance-efficient
@@ -1430,7 +1438,8 @@ public class NpcAvatarExtendedInfo(
             flag = flag or BODY_CUSTOMISATION
         }
         if (this.flags and LEVEL_CHANGE == 0 &&
-            blocks.combatLevelChange.level != CombatLevelChange.DEFAULT_LEVEL_OVERRIDE
+            blocks.combatLevelChange.level !=
+            CombatLevelChange.DEFAULT_LEVEL_OVERRIDE
         ) {
             flag = flag or LEVEL_CHANGE
         }
@@ -1456,6 +1465,8 @@ public class NpcAvatarExtendedInfo(
      * Clears any transient extended info that was flagged in this cycle.
      */
     private fun clearTransientExtendedInformation() {
+        val flags = this.flags
+        if (flags == 0) return
         if (flags and SEQUENCE != 0) {
             blocks.sequence.clear()
         }

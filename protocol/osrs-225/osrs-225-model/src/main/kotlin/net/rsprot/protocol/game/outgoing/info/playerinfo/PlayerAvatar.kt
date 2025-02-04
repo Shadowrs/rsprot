@@ -2,13 +2,13 @@ package net.rsprot.protocol.game.outgoing.info.playerinfo
 
 import io.netty.buffer.ByteBufAllocator
 import net.rsprot.compression.provider.HuffmanCodecProvider
-import net.rsprot.protocol.common.checkCommunicationThread
-import net.rsprot.protocol.common.game.outgoing.info.CoordGrid
-import net.rsprot.protocol.common.game.outgoing.info.playerinfo.encoder.PlayerExtendedInfoEncoders
 import net.rsprot.protocol.game.outgoing.info.AvatarExtendedInfoWriter
 import net.rsprot.protocol.game.outgoing.info.AvatarPriority
 import net.rsprot.protocol.game.outgoing.info.filter.ExtendedInfoFilter
 import net.rsprot.protocol.game.outgoing.info.util.Avatar
+import net.rsprot.protocol.internal.checkCommunicationThread
+import net.rsprot.protocol.internal.game.outgoing.info.CoordGrid
+import net.rsprot.protocol.internal.game.outgoing.info.playerinfo.encoder.PlayerExtendedInfoEncoders
 
 /**
  * The player avatar class represents an avatar for the purposes of player information packet.
@@ -26,7 +26,8 @@ public class PlayerAvatar internal constructor(
     /**
      * The index of our local player.
      */
-    internal var localPlayerIndex: Int = localIndex
+    public var localPlayerIndex: Int = localIndex
+        internal set
 
     /**
      * The preferred resize range. The player information protocol will attempt to
@@ -156,7 +157,8 @@ public class PlayerAvatar internal constructor(
         z: Int,
     ) {
         checkCommunicationThread()
-        this.currentCoord = CoordGrid(level, x, z)
+        this.currentCoord =
+            CoordGrid(level, x, z)
     }
 
     /**
@@ -275,6 +277,22 @@ public class PlayerAvatar internal constructor(
                 resizeCounter = 0
             }
         }
+    }
+
+    override fun toString(): String {
+        return "PlayerAvatar(" +
+            "localPlayerIndex=$localPlayerIndex, " +
+            "preferredResizeRange=$preferredResizeRange, " +
+            "resizeRange=$resizeRange, " +
+            "resizeCounter=$resizeCounter, " +
+            "currentCoord=$currentCoord, " +
+            "worldId=$worldId, " +
+            "priority=$priority, " +
+            "lastCoord=$lastCoord, " +
+            "extendedInfo=$extendedInfo, " +
+            "hidden=$hidden, " +
+            "allocateCycle=$allocateCycle" +
+            ")"
     }
 
     private companion object {
