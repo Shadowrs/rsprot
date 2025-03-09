@@ -5,6 +5,7 @@ import io.netty.bootstrap.ServerBootstrap
 import io.netty.buffer.ByteBufAllocator
 import io.netty.channel.ChannelOption
 import io.netty.channel.EventLoopGroup
+import io.netty.channel.MultiThreadIoEventLoopGroup
 import io.netty.channel.ServerChannel
 import io.netty.channel.WriteBufferWaterMark
 import io.netty.channel.epoll.Epoll
@@ -17,9 +18,9 @@ import io.netty.channel.kqueue.KQueueEventLoopGroup
 import io.netty.channel.kqueue.KQueueServerSocketChannel
 import io.netty.channel.nio.NioEventLoopGroup
 import io.netty.channel.socket.nio.NioServerSocketChannel
-import io.netty.incubator.channel.uring.IOUring
-import io.netty.incubator.channel.uring.IOUringEventLoopGroup
-import io.netty.incubator.channel.uring.IOUringServerSocketChannel
+import io.netty.channel.uring.IoUring
+import io.netty.channel.uring.IoUringIoHandler
+import io.netty.channel.uring.IoUringServerSocketChannel
 import net.rsprot.protocol.api.handlers.OutgoingMessageSizeEstimator
 import java.text.NumberFormat
 import kotlin.math.max
@@ -229,11 +230,12 @@ public class BootstrapBuilder {
             try {
                 when (type) {
                     EventLoopGroupType.IOURING -> {
-                        if (!IOUring.isAvailable()) {
+                        if (!IoUring.isAvailable()) {
                             continue
                         }
-                        val boss = IOUringEventLoopGroup(bossThreadCount)
-                        val child = IOUringEventLoopGroup(childThreadCount)
+                        val factory = IoUringIoHandler.newFactory()
+                        val boss = MultiThreadIoEventLoopGroup(bossThreadCount, factory)
+                        val child = MultiThreadIoEventLoopGroup(childThreadCount, factory)
                         return boss to child
                     }
                     EventLoopGroupType.EPOLL -> {
@@ -271,12 +273,11 @@ public class BootstrapBuilder {
     }
 
     private fun determineSocketChannel(loopGroup: EventLoopGroup): Class<out ServerChannel> =
-        when (loopGroup) {
-            is IOUringEventLoopGroup -> IOUringServerSocketChannel::class.java
-            is EpollEventLoopGroup -> EpollServerSocketChannel::class.java
-            is KQueueEventLoopGroup -> KQueueServerSocketChannel::class.java
-            is NioEventLoopGroup -> NioServerSocketChannel::class.java
-            else -> throw IllegalArgumentException("Unknown EventLoopGroup type: $loopGroup")
+        when {
+            IoUring.isAvailable() -> IoUringServerSocketChannel::class.java
+            Epoll.isAvailable() -> EpollServerSocketChannel::class.java
+            KQueue.isAvailable() -> KQueueServerSocketChannel::class.java
+            else -> NioServerSocketChannel::class.java
         }
 
     /**
