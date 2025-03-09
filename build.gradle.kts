@@ -18,7 +18,7 @@ plugins {
 
 allprojects {
     group = "net.rsprot"
-    version = "1.0.0-ALPHA-20250213-dmm"
+    version = "1.0.0-ALPHA-20250301-dmmps"
 
     repositories {
         mavenCentral()
@@ -46,6 +46,9 @@ allprojects {
         kotlin {
             jvmToolchain(11)
             explicitApi()
+            compilerOptions {
+                freeCompilerArgs = listOf("-Xjvm-default=all")
+            }
         }
     }
 }
