@@ -78,19 +78,19 @@ import net.rsprot.protocol.internal.setCommunicationThread as setInternalCommuni
 @Suppress("MemberVisibilityCanBePrivate")
 public class NetworkService<R>
     internal constructor(
-        internal val allocator: ByteBufAllocator,
-        internal val host: String?,
-        internal val ports: List<Int>,
-        internal val betaWorld: Boolean,
-        internal val bootstrapBuilder: BootstrapBuilder,
-        internal val entityInfoProtocols: EntityInfoProtocols,
-        internal val clientTypes: List<OldSchoolClientType>,
-        internal val gameConnectionHandler: GameConnectionHandler<R>,
-        internal val exceptionHandlers: ExceptionHandlers<R>,
-        internal val iNetAddressHandlers: INetAddressHandlers,
-        internal val gameMessageHandlers: GameMessageHandlers,
-        internal val loginHandlers: LoginHandlers,
-        internal val configuration: NetworkConfiguration,
+        public val allocator: ByteBufAllocator,
+        public val host: String?,
+        public val ports: List<Int>,
+        public val betaWorld: Boolean,
+        public val bootstrapBuilder: BootstrapBuilder,
+        public val entityInfoProtocols: EntityInfoProtocols,
+        public val clientTypes: List<OldSchoolClientType>,
+        public val gameConnectionHandler: GameConnectionHandler<R>,
+        public val exceptionHandlers: ExceptionHandlers<R>,
+        public val iNetAddressHandlers: INetAddressHandlers,
+        public val gameMessageHandlers: GameMessageHandlers,
+        public val loginHandlers: LoginHandlers,
+        public val configuration: NetworkConfiguration,
         public val huffmanCodecProvider: HuffmanCodecProvider,
         public val gameMessageConsumerRepositoryProvider: GameMessageConsumerRepositoryProvider<R>,
         public val trafficMonitor: NetworkTrafficMonitor<*>,
@@ -106,7 +106,7 @@ public class NetworkService<R>
                 js5Configuration,
                 js5GroupProvider,
             )
-        private val js5ServiceExecutor = Thread(js5Service)
+        public val js5ServiceExecutor: Thread = Thread(js5Service)
         internal val decoderRepositories: MessageDecoderRepositories =
             MessageDecoderRepositories.initialize(
                 clientTypes,
@@ -128,7 +128,7 @@ public class NetworkService<R>
 
         public lateinit var bossGroup: EventLoopGroup
         public lateinit var childGroup: EventLoopGroup
-        private lateinit var js5PrefetchFuture: ScheduledFuture<*>
+        public lateinit var js5PrefetchFuture: ScheduledFuture<*>
 
         /**
          * Starts the network service by binding the provided ports.
