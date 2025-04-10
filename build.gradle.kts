@@ -2,6 +2,7 @@ import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import com.vanniktech.maven.publish.JavadocJar
 import com.vanniktech.maven.publish.KotlinJvm
 import com.vanniktech.maven.publish.SonatypeHost
+import org.gradle.api.internal.provider.Providers
 import org.jetbrains.kotlin.gradle.plugin.KotlinPluginWrapper
 
 plugins {
@@ -18,7 +19,7 @@ plugins {
 
 allprojects {
     group = "net.rsprot"
-    version = "1.0.0-ALPHA-20250301-dmmps"
+    version = "1.0.0-ALPHA-20250301-dmmps-1.0.1"
 
     repositories {
         mavenCentral()
@@ -53,6 +54,8 @@ allprojects {
     }
 }
 
+val usernameDmm = project.provider { project.findProperty("dmm.gpr.user") as String? ?: System.getenv("GITHUB_ACTOR") }
+val passwordDmm = project.provider { project.findProperty("dmm.gpr.key") as String? ?: System.getenv("GITHUB_TOKEN") }
 private val exclusionRegex = Regex("""osrs-\d+""")
 subprojects {
     apply(plugin = "org.jlleitschuh.gradle.ktlint")
@@ -72,7 +75,7 @@ subprojects {
             maven {
                 name = "GitHubPackages"
                 // Change the organization and project URL to match with where you're publishing.
-                url = uri("https://maven.pkg.github.com/blurite/rsprot")
+                url = uri("https://maven.pkg.github.com/dmmdevv/dmm-maven")
                 credentials {
                     // The gpr.user and gpr.key properties should be defined where your `gradle.properties`
                     // file is stored, which is typically at `user.home/.gradle/gradle.properties`
@@ -82,8 +85,8 @@ subprojects {
                     // and fill in the user (GitHub username) and key (GitHub Personal Access Token) as shown below.
                     // Personal access tokens can be generated at https://github.com/settings/tokens
                     // Only the packages:read and packages:write permissions are required.
-                    username = project.findProperty("gpr.user") as String? ?: System.getenv("GITHUB_ACTOR")
-                    password = project.findProperty("gpr.key") as String? ?: System.getenv("GITHUB_TOKEN")
+                    username = usernameDmm.get()
+                    password = passwordDmm.get()
                 }
             }
         }
@@ -121,6 +124,10 @@ subprojects {
                 developer {
                     name = "Kris"
                     url = "https://github.com/Z-Kris"
+                }
+                developer {
+                    name = "Shadowrs"
+                    url = "https://github.com/Shadowrs"
                 }
             }
 

@@ -221,11 +221,21 @@ public class NetworkService<R>
 
         public fun shutdown() {
             logger.info { "Attempting to shut down network service." }
-            js5Service.triggerShutdown()
-            js5PrefetchFuture.cancel(true)
-            bossGroup.shutdownGracefully()
-            childGroup.shutdownGracefully()
-            logger.info { "Network service successfully shut down." }
+            try {
+                js5Service.triggerShutdown()
+                if (js5PrefetchFuture != null)
+                    js5PrefetchFuture.cancel(true)
+                logger.info { "js5 yeeted." }
+            } catch (e: Exception) {
+                logger.error(e) { "help" }
+            }
+            try {
+                bossGroup.shutdownGracefully()
+                childGroup.shutdownGracefully()
+                logger.info { "Network service successfully shut down." }
+            } catch (e: Exception) {
+                logger.error(e) { "help" }
+            }
         }
 
         /**
